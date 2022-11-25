@@ -18,6 +18,7 @@ echo 'import express from "express";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import userRouter from "./src/routes/user.route.js";
+import authRouter from "./src/routes/auth.route.js";
 import connection from "./connection.js";
 
 
@@ -26,6 +27,7 @@ dotenv.config();
 app.use(bodyParser.json());
 
 app.use("/users",userRouter);
+app.use("/auth",authRouter);
 
 app.get("*",(req,res) =>{
     res.send("404");
@@ -158,4 +160,37 @@ class UserService {
 }
 
 export default new UserService();' > src/services/user.service.js
+
+
+echo 'import {Router} from "express"
+import AuthService from "../services/auth.service.js"
+const authRouter = new Router();
+
+authRouter.post("/login", (req,res)=>{
+    AuthService.login(req,res)
+})
+
+export default authRouter;' > src/routes/auth.route.js
+
+echo 'import User from "../models/user.model.js";
+import bcrypt from "bcrypt"
+class AuthService{
+    login(req,res){
+        User.findOne({email: req.body.email}).then(user=>{
+            if(user){
+                if(bcrypt.compareSync(req.body.password, user.password)){
+                    res.send("Valid Credentails")
+                }else{
+                    res.send("Invalid Credentials")
+                }
+            }else{
+                res.send("No User Found",404)
+            }
+        }).catch(err =>{
+            res.send("Error Occured")
+        })
+    }
+}
+
+export default new AuthService();' > src/services/auth.service.js
 # after this add start script in package.json and type module
