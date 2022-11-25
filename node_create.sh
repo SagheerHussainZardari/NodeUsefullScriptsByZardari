@@ -19,11 +19,13 @@ mkdir src
 echo 'import express from "express";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
-import "./config/db.js";
 import router from "./routes/index.route.js"
+import connection from "./config/db.js";
 
 const app = express();
 dotenv.config();
+connection();
+
 app.use(bodyParser.json());
 
 app.use(router);
@@ -39,13 +41,15 @@ mkdir src/config
 
 echo 'import mongoose from "mongoose";
 
-const connection = mongoose.connect("mongodb://localhost:27017/node-practise-1",{
+const connection = function(){
+    mongoose.connect(process.env.MONGO_URI,{
     
-}).then(()=>{
-    console.log("Connected to database successfully");
-}).catch((err)=>{
-    console.log("Connection Failed ", err);
-});
+    }).then(()=>{
+        console.log("Connected to database successfully");
+    }).catch((err)=>{
+        console.log("Connection Failed ", err);
+    });
+}
 
 export default connection;' > src/config/db.js
 
