@@ -94,7 +94,6 @@ userRouter.post("/",(req,res)=>{
     UserService.create(req,res);
 });
 
-
 userRouter.delete("/:id",(req,res)=>{
     UserService.delete(req,res);
 });
