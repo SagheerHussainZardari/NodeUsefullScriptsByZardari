@@ -13,34 +13,31 @@ echo 'DB_USER=""' >> .env
 echo 'DB_PASSWORD=""' >> .env
 echo 'MONGO_URI=""' >> .env
 
+mkdir src
+
 # creating server file
 echo 'import express from "express";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
-import userRouter from "./src/routes/user.route.js";
-import authRouter from "./src/routes/auth.route.js";
-import connection from "./connection.js";
-
+import "./config/db.js";
+import router from "./routes/index.route.js"
 
 const app = express();
 dotenv.config();
 app.use(bodyParser.json());
 
-app.use("/users",userRouter);
-app.use("/auth",authRouter);
-
-app.get("*",(req,res) =>{
-    res.send("404");
-});
+app.use(router);
 
 app.listen(process.env.PORT || 3000, ()=>{
     console.log("Server running on http://127.0.0.1:"+process.env.PORT);
-});' > server.js
+});' > src/server.js
+
+
+mkdir src/config
 
 # creates connection file
 
 echo 'import mongoose from "mongoose";
-
 
 const connection = mongoose.connect("mongodb://localhost:27017/node-practise-1",{
     
@@ -50,9 +47,8 @@ const connection = mongoose.connect("mongodb://localhost:27017/node-practise-1",
     console.log("Connection Failed ", err);
 });
 
-export default connection;' > connection.js
+export default connection;' > src/config/db.js
 
-mkdir src
 
 #make src/models
 mkdir src/models
@@ -213,4 +209,21 @@ echo 'class ResponseService {
 }
 
 export default new ResponseService();' > src/services/response.service.js
+
+
+
+echo 'import {Router} from "express"
+import userRouter from "./user.route.js";
+import authRouter from "./auth.route.js";
+
+const router = new Router();
+
+router.use("/users",userRouter);
+router.use("/auth",authRouter);
+
+router.get("*",(req,res) =>{
+    res.send("404");
+});
+
+export default router;' > src/routes/index.route.js
 # after this add start script in package.json and type module
