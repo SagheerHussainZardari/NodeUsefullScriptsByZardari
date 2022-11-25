@@ -4,7 +4,7 @@
 mkdir $1 && cd $1
 
 # project and basic package installation
-npm init -y && npm i express nodemon mongoose dotenv body-parser
+npm init -y && npm i express nodemon mongoose dotenv body-parser bcrypt
 
 # creating env file
 echo 'PORT=3000' > .env
@@ -59,7 +59,16 @@ echo 'import mongoose from "mongoose";
 import  {Schema}  from "mongoose";
 
 const userSchema = new Schema({
-    name: String
+    name: String,
+    email: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    password: {
+        type: String,
+        required: true
+    }
 });
 
 const User = mongoose.model("user", userSchema);
@@ -104,30 +113,40 @@ class UserService {
     list(req,res){
         User.find().then((data) => {
             res.send(data);
-        });
+        }).catch(err =>{
+            res.send(err.message,400)
+        })
     }
 
     get(req,res){
         User.findById(req.params.id).then((data)=>{
             res.send(data);
+        }).catch(err =>{
+            res.send(err.message,400)
         })
     }
 
     create(req,res){
         User.create(req.body).then((data) =>{
             res.send(data);
+        }).catch(err =>{
+            res.send(err.message,400)
         })
     }
 
     delete(req,res){
         User.findByIdAndDelete(req.params.id).then((data)=>{
             res.send("Deleted Successfully");
+        }).catch(err =>{
+            res.send(err.message,400)
         })
     }
 
     update(req,res){
         User.findByIdAndUpdate(req.params.id,req.body).then((data)=>{
             res.send(data);
+        }).catch(err =>{
+            res.send(err.message,400)
         })
     }
 }
