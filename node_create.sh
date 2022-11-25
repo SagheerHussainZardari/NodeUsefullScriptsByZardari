@@ -35,7 +35,7 @@ app.get("*",(req,res) =>{
 
 app.listen(process.env.PORT || 3000, ()=>{
     console.log("Server running on http://127.0.0.1:"+process.env.PORT);
-});' > index.js
+});' > server.js
 
 # creates connection file
 
@@ -114,50 +114,56 @@ mkdir src/services
 #creates User Service
 echo 'import User from "../models/user.model.js";
 import bcrypt from "bcrypt"
+import ResponseService from "./response.service.js";
 
 
 class UserService {
     list(req,res){
-        User.find().then((data) => {
-            res.send(data);
+        User.find().then((users) => {
+            ResponseService.sendResult(res,users,"Users fetched Successfully!","success",200);
         }).catch(err =>{
-            res.send(err.message,400)
+            ResponseService.sendResult(res,null,err.message,"error",400);
         })
     }
 
     get(req,res){
-        User.findById(req.params.id).then((data)=>{
-            res.send(data);
+        User.findById(req.params.id).then((user)=>{
+            ResponseService.sendResult(res,user,"User fetched Successfully!","success",200);
         }).catch(err =>{
-            res.send(err.message,400)
+            ResponseService.sendResult(res,null,err.message,"error",400);
         })
     }
 
     create(req,res){
         req.body.password =  bcrypt.hashSync(req.body.password,10);
-        User.create(req.body).then((data) =>{
-            res.send(data);
+        User.create(req.body).then((user) =>{
+            ResponseService.sendResult(res,user,"User created Successfully!","success",200);
         }).catch(err =>{
-            res.send(err.message,400)
+            ResponseService.sendResult(res,null,err.message,"error",400);
         })
     }
 
     delete(req,res){
-        User.findByIdAndDelete(req.params.id).then((data)=>{
-            res.send("Deleted Successfully");
+        User.findByIdAndDelete(req.params.id).then((user)=>{
+            ResponseService.sendResult(res,null,"User deleted successfully!","success",200);
         }).catch(err =>{
-            res.send(err.message,400)
+            ResponseService.sendResult(res,null,err.message,"error",400);
         })
     }
 
     update(req,res){
         User.findByIdAndUpdate(req.params.id,req.body).then((data)=>{
-            res.send(data);
+            User.findById(req.params.id).then(user =>{
+                ResponseService.sendResult(res,user,"User updated successfully!","success",200);
+            }).catch(err =>{
+                ResponseService.sendResult(res,null,err.message,"error",400);   
+            })
         }).catch(err =>{
-            res.send(err.message,400)
+            ResponseService.sendResult(res,null,err.message,"error",400);
         })
     }
 }
+
 
 export default new UserService();' > src/services/user.service.js
 
@@ -174,23 +180,37 @@ export default authRouter;' > src/routes/auth.route.js
 
 echo 'import User from "../models/user.model.js";
 import bcrypt from "bcrypt"
+import ResponseService from "./response.service.js";
+
 class AuthService{
     login(req,res){
         User.findOne({email: req.body.email}).then(user=>{
             if(user){
                 if(bcrypt.compareSync(req.body.password, user.password)){
-                    res.send("Valid Credentails")
+                    ResponseService.sendResult(res,[],"Valid User","success",200);
                 }else{
-                    res.send("Invalid Credentials")
+                    ResponseService.sendResult(res,[],"InValid User","error",400);
                 }
             }else{
-                res.send("No User Found",404)
+                ResponseService.sendResult(res,[],"No User User","error",404);
             }
         }).catch(err =>{
-            res.send("Error Occured")
+            ResponseService.sendResult(res,[],err.message,"error",404);
         })
     }
 }
-
 export default new AuthService();' > src/services/auth.service.js
+
+echo 'class ResponseService {
+    sendResult(res,data,message,type,status){
+        res.send({
+            result: data ?? [],
+            error: type == "error" ? message : null,
+            message: type == "success" ? message : null,
+            status: status
+        },status)
+    }
+}
+
+export default new ResponseService();' > src/services/response.service.js
 # after this add start script in package.json and type module
