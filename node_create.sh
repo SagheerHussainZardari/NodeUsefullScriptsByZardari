@@ -107,6 +107,8 @@ export default userRouter;' > src/routes/user.route.js
 mkdir src/services
 #creates User Service
 echo 'import User from "../models/user.model.js";
+import bcrypt from "bcrypt"
+
 
 class UserService {
     list(req,res){
@@ -126,6 +128,7 @@ class UserService {
     }
 
     create(req,res){
+        req.body.password =  bcrypt.hashSync(req.body.password,10);
         User.create(req.body).then((data) =>{
             res.send(data);
         }).catch(err =>{
