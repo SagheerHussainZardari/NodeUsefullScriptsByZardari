@@ -11,7 +11,7 @@ echo 'PORT=3000' > .env
 echo 'DB_NAME=""' >> .env
 echo 'DB_USER=""' >> .env
 echo 'DB_PASSWORD=""' >> .env
-echo 'MONGO_URI=""' >> .env
+echo 'MONGO_URI="mongodb://localhost:27017/node-practise-1"' >> .env
 
 mkdir src
 
