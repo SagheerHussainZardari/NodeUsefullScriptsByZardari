@@ -4,7 +4,7 @@
 mkdir $1 && cd $1
 
 # project and basic package installation
-npm init -y && npm i express nodemon mongoose dotenv body-parser bcrypt
+npm init -y && npm i express nodemon mongoose dotenv body-parser bcrypt jsonwebtoken
 
 # creating env file
 echo 'PORT=3000' > .env
@@ -12,7 +12,7 @@ echo 'DB_NAME=""' >> .env
 echo 'DB_USER=""' >> .env
 echo 'DB_PASSWORD=""' >> .env
 echo 'MONGO_URI="mongodb://localhost:27017/node-practise-1"' >> .env
-
+echo 'JWT_SECRET="test"' >> .env
 mkdir src
 
 # creating server file
@@ -86,25 +86,21 @@ mkdir src/routes
 echo 'import { Router } from "express";
 import UserService from "../services/user.service.js"
 const userRouter = new Router()
+import verifyToken from "../middlewares/authJwt.middleware.js"
 
-
-userRouter.get("/",(req,res)=>{
+userRouter.get("/",verifyToken,(req,res)=>{
     UserService.list(req,res);
 });
 
-userRouter.get("/:id",(req,res)=>{
+userRouter.get("/:id",verifyToken,(req,res)=>{
     UserService.get(req,res);
 });
 
-userRouter.post("/",(req,res)=>{
-    UserService.create(req,res);
-});
-
-userRouter.delete("/:id",(req,res)=>{
+userRouter.delete("/:id",verifyToken,(req,res)=>{
     UserService.delete(req,res);
 });
 
-userRouter.patch("/:id",(req,res)=>{
+userRouter.patch("/:id",verifyToken,(req,res)=>{
     UserService.update(req,res);
 });
 
@@ -129,15 +125,6 @@ class UserService {
     get(req,res){
         User.findById(req.params.id).then((user)=>{
             ResponseService.sendResult(res,user,"User fetched Successfully!","success",200);
-        }).catch(err =>{
-            ResponseService.sendResult(res,null,err.message,"error",400);
-        })
-    }
-
-    create(req,res){
-        req.body.password =  bcrypt.hashSync(req.body.password,10);
-        User.create(req.body).then((user) =>{
-            ResponseService.sendResult(res,user,"User created Successfully!","success",200);
         }).catch(err =>{
             ResponseService.sendResult(res,null,err.message,"error",400);
         })
@@ -176,18 +163,29 @@ authRouter.post("/login", (req,res)=>{
     AuthService.login(req,res)
 })
 
+authRouter.post("/register", (req,res)=>{
+    AuthService.register(req,res)
+})
+
 export default authRouter;' > src/routes/auth.route.js
 
 echo 'import User from "../models/user.model.js";
 import bcrypt from "bcrypt"
 import ResponseService from "./response.service.js";
-
+import Jwt  from "jsonwebtoken";
 class AuthService{
     login(req,res){
         User.findOne({email: req.body.email}).then(user=>{
             if(user){
                 if(bcrypt.compareSync(req.body.password, user.password)){
-                    ResponseService.sendResult(res,[],"Valid User","success",200);
+
+                    Jwt.sign({
+                        "useremail": user.email,
+                        "username": user.name
+                    }, process.env.JWT_SECRET,(err, token) =>{
+                        ResponseService.sendResult(res,{"token":token },"LoggedIn Successfully","success",200);
+                    });
+
                 }else{
                     ResponseService.sendResult(res,[],"InValid User","error",400);
                 }
@@ -196,6 +194,20 @@ class AuthService{
             }
         }).catch(err =>{
             ResponseService.sendResult(res,[],err.message,"error",404);
+        })
+    }
+
+    register(req,res){
+        req.body.password =  bcrypt.hashSync(req.body.password,10);
+        User.create(req.body).then((user) =>{
+            Jwt.sign({
+                "useremail": user.email,
+                "username": user.name
+            }, process.env.JWT_SECRET,(err, token) =>{
+                ResponseService.sendResult(res,{"token":token },"Registered Successfully","success",200);
+            });
+        }).catch(err =>{
+            ResponseService.sendResult(res,null,err.message,"error",400);
         })
     }
 }
@@ -230,4 +242,27 @@ router.get("*",(req,res) =>{
 });
 
 export default router;' > src/routes/index.route.js
+
+mkdir src/middlewares
+
+
+echo 'import Jwt from "jsonwebtoken";
+
+const verifyToken = (req,res,next) => {
+      Jwt.verify(req.headers.authorization ? req.headers.authorization.split(" ")[1] : "",process.env.JWT_SECRET,(err,result)=>{
+            if(err){
+                return res.status(403).json({
+                    "message": "UnAuthorized"
+                })
+            }
+            return next()
+        }) 
+}
+
+export default verifyToken;' > src/middlewares/authJwt.middleware.js
+
+
+echo 'node_modules
+.env
+*.env' > .gitignore
 # after this add start script in package.json and type module
