@@ -4,7 +4,7 @@
 mkdir $1 && cd $1
 
 # project and basic package installation
-npm init -y && npm i express nodemon mongoose dotenv body-parser bcrypt jsonwebtoken
+npm init -y && npm i express nodemon mongoose dotenv body-parser bcrypt jsonwebtoken winston
 
 # creating env file
 echo 'PORT=3000' > .env
@@ -21,6 +21,8 @@ import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import router from "./routes/index.route.js"
 import connection from "./config/db.js";
+import logger from "./logger.js";
+
 
 const app = express();
 dotenv.config();
@@ -31,8 +33,19 @@ app.use(bodyParser.json());
 app.use(router);
 
 app.listen(process.env.PORT || 3000, ()=>{
-    console.log("Server running on http://127.0.0.1:"+process.env.PORT);
+    logger.info("Server running on http://127.0.0.1:"+process.env.PORT);
 });' > src/server.js
+
+echo 'import { createLogger , transports } from "winston";
+
+const logger = createLogger({
+    level: 'debug',
+    transports: [
+        new transports.File({filename: 'app.log'})
+    ]
+});
+
+export default logger;' > src/logger.js
 
 
 mkdir src/config
