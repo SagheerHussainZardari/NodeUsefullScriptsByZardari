@@ -39,9 +39,9 @@ app.listen(process.env.PORT || 3000, ()=>{
 echo 'import { createLogger , transports } from "winston";
 
 const logger = createLogger({
-    level: 'debug',
+    level: "debug",
     transports: [
-        new transports.File({filename: 'app.log'})
+        new transports.File({filename: "app.log"})
     ]
 });
 
@@ -260,10 +260,10 @@ mkdir src/middlewares
 
 
 echo 'import Jwt from "jsonwebtoken";
-import ResponseService from "../services/response.service";
+import ResponseService from "../services/response.service.js";
 
 const verifyToken = (req,res,next) => {
-      Jwt.verify(req.headers.authorization ? req.headers.authorization.split(' ')[1] : '',process.env.JWT_SECRET,(err,result)=>{
+      Jwt.verify(req.headers.authorization ? req.headers.authorization.split(" ")[1] : "" ,process.env.JWT_SECRET,(err,result)=>{
             if(err){
               return  ResponseService.sendResult(res,[],"UnAuthorized","error",403)
             }
