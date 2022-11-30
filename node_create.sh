@@ -33,7 +33,7 @@ app.use(bodyParser.json());
 app.use(router);
 
 app.listen(process.env.PORT || 3000, ()=>{
-    logger.info("Server running on http://127.0.0.1:"+process.env.PORT);
+   logger.info("Server running on http://127.0.0.1:"+process.env.PORT+" started at: "+Date());
 });' > src/server.js
 
 echo 'import { createLogger , transports } from "winston";
@@ -112,7 +112,7 @@ mkdir src/controllers
 #creates User Service
 echo 'import User from "../models/user.model.js";
 import bcrypt from "bcrypt"
-import {sendResult} from "./response.controller.js";
+import {sendResult} from "../helpers/utils.js";
 
 
 const list = (req,res) =>{
@@ -166,7 +166,7 @@ export default authRouter;' > src/routes/auth.route.js
 
 echo 'import User from "../models/user.model.js";
 import bcrypt from "bcrypt"
-import {sendResult} from "./response.controller.js";
+import {sendResult} from "../helpers/utils.js";
 import Jwt  from "jsonwebtoken";
 
 const login = (req,res) =>{
@@ -208,20 +208,6 @@ const register = (req, res) =>{
 
 export  {login, register}' > src/controllers/auth.controller.js
 
-echo '
-const sendResult = (res,data,message,type,status) =>{
-    res.status(status).send({
-        result: data ?? [],
-        error: type == "error" ? message : null,
-        message: type == "success" ? message : null,
-        status: status
-    })
-}
-
-export {sendResult};' > src/controllers/response.controller.js
-
-
-
 echo 'import {Router} from "express"
 import userRouter from "./user.route.js";
 import authRouter from "./auth.route.js";
@@ -241,12 +227,17 @@ mkdir src/middlewares
 
 
 echo 'import Jwt from "jsonwebtoken";
-import {sendResult} from "../controllers/response.controller.js";
+import logger from "../logger.js";
+import {sendResult} from "../helpers/utils.js";
 const verifyToken = (req,res,next) => {
       Jwt.verify(req.headers.authorization ? req.headers.authorization.split(" ")[1] : "",process.env.JWT_SECRET,(err,result)=>{
             if(err){
-              return  sendResult(res,[],"UnAuthorized","error",403)
+                logger.error("Token InValid: "+req.headers.authorization.split(" ")[1])
+                return  sendResult(res,[],"UnAuthorized","error",403)
             }
+            
+            req.userId = result.id;
+            logger.info("Token valid",result)
             return next()
         }) 
 }
@@ -257,4 +248,16 @@ export default verifyToken;' > src/middlewares/authJwt.middleware.js
 echo 'node_modules
 .env
 *.env' > .gitignore
+
+
+mkdir src/helpers
+
+echo 'export const sendResult = (res,data,message,type,status) =>{
+    res.status(status).send({
+        data: data ?? [],
+        type: type,
+        message: message,
+        status: status
+    })
+}' > src/helpers/utils.js
 # after this add start script in package.json and type module
