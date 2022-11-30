@@ -125,7 +125,11 @@ const list = (req,res) =>{
 
 const get = (req,res) =>{
     User.findById(req.params.id).then((user)=>{
-        sendResult(res,user,"User fetched Successfully!","success",200);
+        if(user){
+            sendResult(res,user,"User fetched Successfully!","success",200);
+        }else{
+            sendResult(res,[],"No User Found!","error",404);
+        }
     }).catch(err =>{
         sendResult(res,null,err.message,"error",400);
     })
@@ -142,7 +146,11 @@ const destroy = (req,res) =>{
 const update = (req,res) =>{
     User.findByIdAndUpdate(req.params.id,req.body).then((data)=>{
         User.findById(req.params.id).then(user =>{
-            sendResult(res,user,"User updated successfully!","success",200);
+            if(user){
+                sendResult(res,user,"User updated successfully!","success",200);
+            }else{
+                sendResult(res,[],"No User Found!","error",404);
+            }
         }).catch(err =>{
             sendResult(res,null,err.message,"error",400);   
         })
@@ -235,7 +243,7 @@ const verifyToken = (req,res,next) => {
                 logger.error("Token InValid: "+req.headers.authorization.split(" ")[1])
                 return  sendResult(res,[],"UnAuthorized","error",403)
             }
-            
+
             req.userId = result.id;
             logger.info("Token valid",result)
             return next()
