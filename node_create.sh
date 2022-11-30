@@ -97,147 +97,128 @@ export default User;' > src/models/user.model.js
 mkdir src/routes
 #create User Routes
 echo 'import { Router } from "express";
-import UserService from "../services/user.service.js"
+import {list,get,destroy,update} from "../controllers/user.controller.js"
 const userRouter = new Router()
 import verifyToken from "../middlewares/authJwt.middleware.js"
 
-userRouter.get("/",verifyToken,(req,res)=>{
-    UserService.list(req,res);
-});
-
-userRouter.get("/:id",verifyToken,(req,res)=>{
-    UserService.get(req,res);
-});
-
-userRouter.delete("/:id",verifyToken,(req,res)=>{
-    UserService.delete(req,res);
-});
-
-userRouter.patch("/:id",verifyToken,(req,res)=>{
-    UserService.update(req,res);
-});
+userRouter.get("/",verifyToken,list);
+userRouter.get("/:id",verifyToken,get);
+userRouter.delete("/:id",verifyToken,destroy);
+userRouter.patch("/:id",verifyToken,update);
 
 export default userRouter;' > src/routes/user.route.js
 
-mkdir src/services
+mkdir src/controllers
 #creates User Service
 echo 'import User from "../models/user.model.js";
 import bcrypt from "bcrypt"
-import ResponseService from "./response.service.js";
+import {sendResult} from "./response.controller.js";
 
 
-class UserService {
-    list(req,res){
-        User.find().then((users) => {
-            ResponseService.sendResult(res,users,"Users fetched Successfully!","success",200);
+const list = (req,res) =>{
+    User.find().then((users) => {
+        sendResult(res,users,"Users fetched Successfully!","success",200);
+    }).catch(err =>{
+        sendResult(res,null,err.message,"error",400);
+    })
+}
+
+const get = (req,res) =>{
+    User.findById(req.params.id).then((user)=>{
+        sendResult(res,user,"User fetched Successfully!","success",200);
+    }).catch(err =>{
+        sendResult(res,null,err.message,"error",400);
+    })
+}
+
+const destroy = (req,res) =>{
+    User.findByIdAndDelete(req.params.id).then((user)=>{
+        sendResult(res,null,"User deleted successfully!","success",200);
+    }).catch(err =>{
+        sendResult(res,null,err.message,"error",400);
+    })
+}
+
+const update = (req,res) =>{
+    User.findByIdAndUpdate(req.params.id,req.body).then((data)=>{
+        User.findById(req.params.id).then(user =>{
+            sendResult(res,user,"User updated successfully!","success",200);
         }).catch(err =>{
-            ResponseService.sendResult(res,null,err.message,"error",400);
+            sendResult(res,null,err.message,"error",400);   
         })
-    }
-
-    get(req,res){
-        User.findById(req.params.id).then((user)=>{
-            ResponseService.sendResult(res,user,"User fetched Successfully!","success",200);
-        }).catch(err =>{
-            ResponseService.sendResult(res,null,err.message,"error",400);
-        })
-    }
-
-    delete(req,res){
-        User.findByIdAndDelete(req.params.id).then((user)=>{
-            ResponseService.sendResult(res,null,"User deleted successfully!","success",200);
-        }).catch(err =>{
-            ResponseService.sendResult(res,null,err.message,"error",400);
-        })
-    }
-
-    update(req,res){
-        User.findByIdAndUpdate(req.params.id,req.body).then((data)=>{
-            User.findById(req.params.id).then(user =>{
-                ResponseService.sendResult(res,user,"User updated successfully!","success",200);
-            }).catch(err =>{
-                ResponseService.sendResult(res,null,err.message,"error",400);   
-            })
-        }).catch(err =>{
-            ResponseService.sendResult(res,null,err.message,"error",400);
-        })
-    }
+    }).catch(err =>{
+        sendResult(res,null,err.message,"error",400);
+    })
 }
 
 
-export default new UserService();' > src/services/user.service.js
+export  {list,get,destroy,update};' > src/controllers/user.controller.js
 
 
 echo 'import {Router} from "express"
-import AuthService from "../services/auth.service.js"
+import {login, register}  from "../controllers/auth.controller.js"
 const authRouter = new Router();
 
-authRouter.post("/login", (req,res)=>{
-    AuthService.login(req,res)
-})
-
-authRouter.post("/register", (req,res)=>{
-    AuthService.register(req,res)
-})
+authRouter.post("/login", login)
+authRouter.post("/register", register)
 
 export default authRouter;' > src/routes/auth.route.js
 
 echo 'import User from "../models/user.model.js";
 import bcrypt from "bcrypt"
-import ResponseService from "./response.service.js";
+import {sendResult} from "./response.controller.js";
 import Jwt  from "jsonwebtoken";
-class AuthService{
-    login(req,res){
-        User.findOne({email: req.body.email}).then(user=>{
-            if(user){
-                if(bcrypt.compareSync(req.body.password, user.password)){
 
-                    Jwt.sign({
-                        "useremail": user.email,
-                        "username": user.name
-                    }, process.env.JWT_SECRET,(err, token) =>{
-                        ResponseService.sendResult(res,{"token":token },"LoggedIn Successfully","success",200);
-                    });
+const login = (req,res) =>{
+    User.findOne({email: req.body.email}).then(user=>{
+        if(user){
+            if(bcrypt.compareSync(req.body.password, user.password)){
 
-                }else{
-                    ResponseService.sendResult(res,[],"InValid User","error",400);
-                }
+                Jwt.sign({
+                    "useremail": user.email,
+                    "username": user.name
+                }, process.env.JWT_SECRET,{expiresIn: "20s"},(err, token) =>{
+                    sendResult(res,{"token":token,"expiresIn": "20 seconds" },"LoggedIn Successfully","success",200);
+                });
+
             }else{
-                ResponseService.sendResult(res,[],"No User User","error",404);
+                sendResult(res,[],"InValid User","error",400);
             }
-        }).catch(err =>{
-            ResponseService.sendResult(res,[],err.message,"error",404);
-        })
-    }
-
-    register(req,res){
-        req.body.password =  bcrypt.hashSync(req.body.password,10);
-        User.create(req.body).then((user) =>{
-            Jwt.sign({
-                "useremail": user.email,
-                "username": user.name
-            }, process.env.JWT_SECRET,(err, token) =>{
-                ResponseService.sendResult(res,{"token":token },"Registered Successfully","success",200);
-            });
-        }).catch(err =>{
-            ResponseService.sendResult(res,null,err.message,"error",400);
-        })
-    }
-}
-export default new AuthService();' > src/services/auth.service.js
-
-echo 'class ResponseService {
-    sendResult(res,data,message,type,status){
-        res.status(status).send({
-            result: data ?? [],
-            error: type == "error" ? message : null,
-            message: type == "success" ? message : null,
-            status: status
-        })
-    }
+        }else{
+            sendResult(res,[],"No User User","error",404);
+        }
+    }).catch(err =>{
+        sendResult(res,[],err.message,"error",404);
+    })
 }
 
-export default new ResponseService();' > src/services/response.service.js
+const register = (req, res) =>{
+    req.body.password =  bcrypt.hashSync(req.body.password,10);
+    User.create(req.body).then((user) =>{
+        Jwt.sign({
+            "useremail": user.email,
+            "username": user.name
+        }, process.env.JWT_SECRET,{expiresIn: "20s"},(err, token) =>{
+            sendResult(res,{"token":token,"expiresIn": "20 seconds" },"Registered Successfully","success",200);
+        });
+    }).catch(err =>{
+        sendResult(res,null,err.message,"error",400);
+    })
+}
+
+export  {login, register}' > src/controllers/auth.controller.js
+
+echo '
+const sendResult = (res,data,message,type,status) =>{
+    res.status(status).send({
+        result: data ?? [],
+        error: type == "error" ? message : null,
+        message: type == "success" ? message : null,
+        status: status
+    })
+}
+
+export {sendResult};' > src/controllers/response.controller.js
 
 
 
@@ -260,12 +241,11 @@ mkdir src/middlewares
 
 
 echo 'import Jwt from "jsonwebtoken";
-import ResponseService from "../services/response.service.js";
-
+import {sendResult} from "../controllers/response.controller.js";
 const verifyToken = (req,res,next) => {
-      Jwt.verify(req.headers.authorization ? req.headers.authorization.split(" ")[1] : "" ,process.env.JWT_SECRET,(err,result)=>{
+      Jwt.verify(req.headers.authorization ? req.headers.authorization.split(" ")[1] : "",process.env.JWT_SECRET,(err,result)=>{
             if(err){
-              return  ResponseService.sendResult(res,[],"UnAuthorized","error",403)
+              return  sendResult(res,[],"UnAuthorized","error",403)
             }
             return next()
         }) 
